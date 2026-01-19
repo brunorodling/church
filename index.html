@@ -1,0 +1,2365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Igreja Digital - Sistema Integrado</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        /* Paleta Igreja Quadrangular: Preto, Vermelho, Amarelo, Azul, Roxo */
+        .gradient-bg { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); }
+        .gradient-gold { background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%); }
+        .gradient-green { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); }
+        .gradient-blue { background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); }
+        .gradient-purple { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); }
+        .gradient-black { background: linear-gradient(135deg, #1F2937 0%, #111827 100%); }
+        .card-shadow { box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+        .card-shadow-lg { box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+        .nav-active { background: rgba(255,255,255,0.25); border-radius: 12px; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .slide-up { animation: slideUp 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .float { animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #DC2626, #991B1B); border-radius: 10px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #DC2626 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2); }
+        .btn-loading { pointer-events: none; opacity: 0.7; }
+        .glass { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .input-field { transition: all 0.3s ease; }
+        .input-field:hover { border-color: #FCA5A5; }
+        .btn-primary { transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(220, 38, 38, 0.3); }
+        .btn-primary:active { transform: translateY(0); }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
+        .priority-urgent { border-left: 4px solid #DC2626; }
+        .priority-high { border-left: 4px solid #EAB308; }
+        .priority-normal { border-left: 4px solid #2563EB; }
+        .quadrangular-red { color: #DC2626; }
+        .quadrangular-yellow { color: #EAB308; }
+        .quadrangular-blue { color: #2563EB; }
+        .quadrangular-purple { color: #7C3AED; }
+        .bg-quadrangular-red { background-color: #DC2626; }
+        .bg-quadrangular-yellow { background-color: #EAB308; }
+        .bg-quadrangular-blue { background-color: #2563EB; }
+        .bg-quadrangular-purple { background-color: #7C3AED; }
+        @media (max-width: 640px) {
+            .mobile-menu { font-size: 0.7rem; }
+            .mobile-menu i { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 gradient-bg flex items-center justify-center z-[100]">
+        <div class="text-center text-white">
+            <div class="w-16 h-16 mx-auto mb-4 relative">
+                <i class="fas fa-church text-4xl float"></i>
+            </div>
+            <h1 class="text-xl font-bold mb-2">Igreja Digital</h1>
+            <div class="flex items-center justify-center gap-2">
+                <div class="w-1.5 h-1.5 bg-white rounded-full pulse-dot"></div>
+                <span class="text-white/80 text-sm">Conectando...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Selector -->
+    <div id="appSelector" class="hidden min-h-screen gradient-bg flex items-center justify-center p-3">
+        <div class="text-center fade-in w-full max-w-md">
+            <div class="mb-6">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 glass">
+                    <i class="fas fa-church text-white text-2xl"></i>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">Igreja Digital</h1>
+                <p class="text-white/80 text-sm">Sistema Integrado para Igrejas</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button onclick="openApp('admin')" class="bg-white rounded-2xl p-4 card-shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group">
+                    <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-all shadow-lg">
+                        <i class="fas fa-user-shield text-lg text-white"></i>
+                    </div>
+                    <h2 class="text-sm font-bold text-gray-800 mb-1">Administrador</h2>
+                    <p class="text-gray-500 text-xs">Pastores e Liderança</p>
+                </button>
+                
+                <button onclick="openApp('member')" class="bg-white rounded-2xl p-4 card-shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer group">
+                    <div class="w-12 h-12 gradient-gold rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-all shadow-lg">
+                        <i class="fas fa-users text-lg text-white"></i>
+                    </div>
+                    <h2 class="text-sm font-bold text-gray-800 mb-1">Fiéis</h2>
+                    <p class="text-gray-500 text-xs">Membros e Visitantes</p>
+                </button>
+            </div>
+            
+            <div class="glass rounded-xl px-4 py-2 inline-flex items-center gap-2">
+                <span class="w-1.5 h-1.5 bg-green-400 rounded-full pulse-dot" id="statusDot"></span>
+                <span class="text-white/90 text-xs" id="connectionStatus">Conectando...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login -->
+    <div id="adminLogin" class="hidden min-h-screen gradient-bg flex items-center justify-center p-3">
+        <div class="bg-white rounded-2xl p-5 w-full max-w-sm card-shadow-lg slide-up">
+            <button onclick="backToSelector()" class="flex items-center gap-2 text-gray-400 hover:text-gray-600 mb-4 transition-colors text-sm">
+                <i class="fas fa-arrow-left text-xs"></i>
+                <span>Voltar</span>
+            </button>
+            
+            <!-- Login/Register Tabs -->
+            <div class="flex bg-gray-100 rounded-xl p-1 mb-4">
+                <button id="tabLogin" onclick="showAuthTab('login')" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all bg-white shadow-sm text-gray-800">Entrar</button>
+                <button id="tabRegister" onclick="showAuthTab('register')" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all text-gray-500 hover:text-gray-700">Cadastrar</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm">
+                <div class="text-center mb-5">
+                    <div class="w-14 h-14 gradient-bg rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                        <i class="fas fa-lock text-xl text-white"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-gray-800">Bem-vindo de volta!</h2>
+                    <p class="text-gray-500 text-sm mt-1">Entre com suas credenciais</p>
+                </div>
+                <form onsubmit="handleLogin(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">E-mail</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="email" id="loginEmail" class="input-field w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="seu@email.com" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">Senha</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="password" id="loginPassword" class="input-field w-full pl-9 pr-9 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="••••••••" required>
+                            <button type="button" onclick="togglePassword('loginPassword')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" id="rememberMe" class="w-3 h-3 text-red-600 rounded border-gray-300">
+                            <span class="text-xs text-gray-600">Lembrar-me</span>
+                        </label>
+                        <button type="button" onclick="showForgotPassword()" class="text-xs text-red-600 hover:text-red-700 font-medium">Esqueci a senha</button>
+                    </div>
+                    <button type="submit" id="loginBtn" class="btn-primary w-full gradient-bg text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 mt-4 text-sm">
+                        <span>Entrar</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="registerForm" class="hidden">
+                <div class="text-center mb-5">
+                    <div class="w-14 h-14 gradient-blue rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                        <i class="fas fa-user-plus text-xl text-white"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-gray-800">Criar Conta</h2>
+                    <p class="text-gray-500 text-sm mt-1">Cadastre sua igreja no sistema</p>
+                </div>
+                <form onsubmit="handleRegister(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">Seu Nome Completo</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="regName" class="input-field w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="Pastor João Silva" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">Nome da Igreja</label>
+                        <div class="relative">
+                            <i class="fas fa-church absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="regChurchName" class="input-field w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="Igreja Evangélica..." required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">E-mail</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="email" id="regEmail" class="input-field w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="seu@email.com" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">Senha</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="password" id="regPassword" class="input-field w-full pl-9 pr-9 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="Mínimo 6 caracteres" required minlength="6">
+                            <button type="button" onclick="togglePassword('regPassword')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">Confirmar Senha</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="password" id="regPasswordConfirm" class="input-field w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="Repita a senha" required>
+                        </div>
+                    </div>
+                    <button type="submit" id="registerBtn" class="btn-primary w-full gradient-blue text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 mt-4 text-sm">
+                        <span>Criar Conta</span>
+                        <i class="fas fa-check text-xs"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgotPasswordForm" class="hidden">
+                <div class="text-center mb-5">
+                    <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-envelope-open text-xl text-amber-600"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-gray-800">Recuperar Senha</h2>
+                    <p class="text-gray-500 text-sm mt-1">Enviaremos um link por e-mail</p>
+                </div>
+                <form onsubmit="handleForgotPassword(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-gray-700 text-xs font-medium mb-1">E-mail</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="email" id="forgotEmail" class="input-field w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm" placeholder="seu@email.com" required>
+                        </div>
+                    </div>
+                    <button type="submit" id="forgotBtn" class="btn-primary w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg font-semibold text-sm">
+                        Enviar Link de Recuperação
+                    </button>
+                    <button type="button" onclick="showAuthTab('login')" class="w-full text-gray-500 py-2 hover:text-gray-700 transition-all font-medium text-sm">
+                        <i class="fas fa-arrow-left mr-1 text-xs"></i>Voltar ao login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="hidden min-h-screen bg-gray-50">
+        <!-- Admin Header -->
+        <header class="gradient-bg text-white p-3 sticky top-0 z-50 shadow-lg">
+            <div class="max-w-6xl mx-auto flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-church text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none" id="adminChurchName">Igreja Digital</h1>
+                        <p class="text-[10px] text-white/70 hidden sm:block">Painel Administrativo</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="hidden md:flex items-center gap-2 glass px-3 py-1.5 rounded-lg">
+                        <i class="fas fa-user text-xs"></i>
+                        <span class="text-xs truncate max-w-[120px]" id="adminUserName">Administrador</span>
+                    </div>
+                    <button onclick="adminLogout()" class="glass p-2 sm:px-3 sm:py-1.5 rounded-lg hover:bg-white/30 transition-all flex items-center gap-1.5" title="Sair">
+                        <i class="fas fa-sign-out-alt text-sm"></i>
+                        <span class="hidden sm:inline text-xs font-medium">Sair</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Navigation -->
+        <nav class="gradient-bg text-white px-2 pb-3">
+            <div class="max-w-6xl mx-auto flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
+                <button onclick="showAdminSection('dashboard')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="dashboard">
+                    <i class="fas fa-home text-sm"></i><span class="hidden sm:inline">Início</span>
+                </button>
+                <button onclick="showAdminSection('donations')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="donations">
+                    <i class="fas fa-hand-holding-heart text-sm"></i><span class="hidden sm:inline">Dízimos</span>
+                </button>
+                <button onclick="showAdminSection('announcements')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="announcements">
+                    <i class="fas fa-bullhorn text-sm"></i><span class="hidden sm:inline">Avisos</span>
+                </button>
+                <button onclick="showAdminSection('events')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="events">
+                    <i class="fas fa-calendar text-sm"></i><span class="hidden sm:inline">Eventos</span>
+                </button>
+                <button onclick="showAdminSection('finances')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="finances">
+                    <i class="fas fa-chart-pie text-sm"></i><span class="hidden sm:inline">Finanças</span>
+                </button>
+                <button onclick="showAdminSection('media')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="media">
+                    <i class="fas fa-video text-sm"></i><span class="hidden sm:inline">Mídia</span>
+                </button>
+                <button onclick="showAdminSection('settings')" class="admin-nav mobile-menu px-2 sm:px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 transition-all text-xs" data-section="settings">
+                    <i class="fas fa-cog text-sm"></i><span class="hidden sm:inline">Config</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Admin Content -->
+        <main class="max-w-6xl mx-auto p-3 sm:p-4">
+            <!-- Dashboard Section -->
+            <section id="adminDashboardSection" class="admin-section fade-in">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Visão Geral</h2>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
+                    <div class="bg-white rounded-xl p-3 card-shadow card-hover">
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-bullhorn text-red-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-[10px]">Avisos</p>
+                                <p class="text-lg font-bold text-gray-800" id="statsAnnouncements">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 card-shadow card-hover">
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-calendar text-blue-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-[10px]">Eventos</p>
+                                <p class="text-lg font-bold text-gray-800" id="statsEvents">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 card-shadow card-hover">
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-yellow-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-[10px]">Este Mês</p>
+                                <p class="text-sm font-bold text-gray-800 truncate" id="statsIncome">R$ 0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-3 card-shadow card-hover">
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-video text-purple-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-[10px]">Mídias</p>
+                                <p class="text-lg font-bold text-gray-800" id="statsMedia">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl p-4 card-shadow">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                        <i class="fas fa-bell text-red-500 text-sm"></i>
+                        Enviar Notificação aos Fiéis
+                    </h3>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="notificationText" class="input-field flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="Digite uma mensagem importante...">
+                        <button onclick="sendNotification()" class="btn-primary gradient-bg text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                            <span>Enviar</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Donations Section -->
+            <section id="adminDonationsSection" class="admin-section hidden fade-in">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Gestão de Dízimos e Ofertas</h2>
+                <div class="bg-white rounded-xl p-4 card-shadow">
+                    <form onsubmit="saveDonationSettings(event)" class="space-y-4">
+                        <div class="grid sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Chave PIX</label>
+                                <input type="text" id="pixKey" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="email@igreja.com ou CNPJ">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Tipo da Chave PIX</label>
+                                <select id="pixKeyType" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg bg-white text-sm">
+                                    <option value="E-mail">E-mail</option>
+                                    <option value="CPF">CPF</option>
+                                    <option value="CNPJ">CNPJ</option>
+                                    <option value="Telefone">Telefone</option>
+                                    <option value="Chave Aleatória">Chave Aleatória</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Banco</label>
+                                <input type="text" id="bankName" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="Nome do Banco">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Agência</label>
+                                <input type="text" id="bankAgency" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="0000">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Conta</label>
+                                <input type="text" id="bankAccount" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="00000-0">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Nome do Titular</label>
+                                <input type="text" id="accountHolder" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="Nome da Igreja">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-xs font-medium mb-2">Tipos de Doação Aceitos</label>
+                            <div class="flex flex-wrap gap-2">
+                                <label class="flex items-center gap-1.5 bg-red-50 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-red-100 transition-colors">
+                                    <input type="checkbox" id="typeTithe" checked class="w-3 h-3 text-red-600 rounded">
+                                    <span class="text-xs font-medium text-red-700">Dízimo</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 bg-yellow-50 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors">
+                                    <input type="checkbox" id="typeOffering" checked class="w-3 h-3 text-yellow-600 rounded">
+                                    <span class="text-xs font-medium text-yellow-700">Oferta</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                                    <input type="checkbox" id="typeMissions" checked class="w-3 h-3 text-blue-600 rounded">
+                                    <span class="text-xs font-medium text-blue-700">Missões</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 bg-purple-50 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+                                    <input type="checkbox" id="typeConstruction" class="w-3 h-3 text-purple-600 rounded">
+                                    <span class="text-xs font-medium text-purple-700">Construção</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary gradient-bg text-white px-5 py-2 rounded-lg font-medium flex items-center gap-2 text-sm">
+                            <i class="fas fa-save text-xs"></i>
+                            <span>Salvar Configurações</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Announcements Section -->
+            <section id="adminAnnouncementsSection" class="admin-section hidden fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-800">Avisos e Anúncios</h2>
+                    <button onclick="showAnnouncementModal()" class="btn-primary gradient-bg text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span>Novo Aviso</span>
+                    </button>
+                </div>
+                <div id="announcementsList" class="space-y-3">
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-spinner spin text-xl"></i>
+                        <p class="mt-2 text-sm">Carregando avisos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Events Section -->
+            <section id="adminEventsSection" class="admin-section hidden fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-800">Eventos da Igreja</h2>
+                    <button onclick="showEventModal()" class="btn-primary gradient-bg text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span>Novo Evento</span>
+                    </button>
+                </div>
+                <div id="eventsList" class="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                    <div class="text-center py-8 text-gray-400 col-span-full">
+                        <i class="fas fa-spinner spin text-xl"></i>
+                        <p class="mt-2 text-sm">Carregando eventos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Finances Section -->
+            <section id="adminFinancesSection" class="admin-section hidden fade-in">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Controle Financeiro</h2>
+                
+                <div class="grid lg:grid-cols-3 gap-3 mb-4">
+                    <div class="lg:col-span-2 bg-white rounded-xl p-4 card-shadow">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                            <i class="fas fa-plus-circle text-blue-500 text-sm"></i>
+                            Registrar Nova Entrada
+                        </h3>
+                        <form onsubmit="addFinanceEntry(event)" class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                            <input type="date" id="financeDate" class="input-field col-span-2 sm:col-span-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" required>
+                            <input type="number" step="0.01" id="financeValue" class="input-field px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="Valor R$" required>
+                            <select id="financeCategory" class="input-field px-3 py-2 border-2 border-gray-200 rounded-lg bg-white text-sm" required>
+                                <option value="">Categoria</option>
+                                <option value="dizimo">Dízimo</option>
+                                <option value="oferta">Oferta</option>
+                                <option value="missoes">Missões</option>
+                                <option value="construcao">Construção</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                            <button type="submit" class="btn-primary col-span-2 lg:col-span-1 gradient-blue text-white px-3 py-2 rounded-lg font-medium flex items-center justify-center gap-1.5 text-sm">
+                                <i class="fas fa-plus text-xs"></i>
+                                <span>Adicionar</span>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 card-shadow">
+                        <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                            <i class="fas fa-chart-bar text-yellow-500 text-sm"></i>
+                            Totais do Mês
+                        </h3>
+                        <div class="space-y-2" id="financeTotals">
+                            <p class="text-gray-400 text-center py-3 text-sm">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid lg:grid-cols-2 gap-3">
+                    <div class="bg-white rounded-xl p-4 card-shadow">
+                        <h3 class="font-bold text-gray-800 mb-3 text-sm">Distribuição por Categoria</h3>
+                        <div class="h-48">
+                            <canvas id="financeChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 card-shadow">
+                        <h3 class="font-bold text-gray-800 mb-3 text-sm">Últimos Registros</h3>
+                        <div id="financeEntries" class="space-y-1 max-h-48 overflow-y-auto">
+                            <p class="text-gray-400 text-center py-3 text-sm">Carregando...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Media Section -->
+            <section id="adminMediaSection" class="admin-section hidden fade-in">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-800">Mídia e Conteúdo</h2>
+                    <button onclick="showMediaModal()" class="btn-primary gradient-bg text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span>Adicionar Mídia</span>
+                    </button>
+                </div>
+                <div id="mediaList" class="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                    <div class="text-center py-8 text-gray-400 col-span-full">
+                        <i class="fas fa-spinner spin text-xl"></i>
+                        <p class="mt-2 text-sm">Carregando mídias...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="adminSettingsSection" class="admin-section hidden fade-in">
+                <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Configurações da Igreja</h2>
+                
+                <div class="bg-white rounded-xl p-4 card-shadow mb-4">
+                    <form onsubmit="saveChurchSettings(event)" class="space-y-4">
+                        <div class="grid sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Nome da Igreja</label>
+                                <input type="text" id="churchName" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="Igreja Evangélica...">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Telefone</label>
+                                <input type="tel" id="churchPhone" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Endereço Completo</label>
+                                <input type="text" id="churchAddress" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="Rua, número, bairro, cidade - UF">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">E-mail de Contato</label>
+                                <input type="email" id="churchEmail" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="contato@igreja.com">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-xs font-medium mb-1">URL do Logo</label>
+                                <input type="url" id="churchLogo" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder="https://...">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-gray-700 text-xs font-medium mb-1">Versículo do Dia</label>
+                                <textarea id="dailyVerse" rows="2" class="input-field w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm" placeholder='"Porque Deus amou o mundo..." - João 3:16'></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary gradient-bg text-white px-5 py-2 rounded-lg font-medium flex items-center gap-2 text-sm">
+                            <i class="fas fa-save text-xs"></i>
+                            <span>Salvar Configurações</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="bg-white rounded-xl p-4 card-shadow">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                        <i class="fas fa-history text-blue-500 text-sm"></i>
+                        Log de Atividades
+                    </h3>
+                    <div id="activityLog" class="space-y-1 max-h-48 overflow-y-auto">
+                        <p class="text-gray-400 text-center py-3 text-sm">Carregando logs...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Member App -->
+    <div id="memberApp" class="hidden min-h-screen bg-gray-50">
+        <!-- Member Header -->
+        <header class="gradient-gold text-white p-3 sticky top-0 z-50 shadow-lg">
+            <div class="max-w-lg mx-auto flex items-center justify-between">
+                <button onclick="backToSelector()" class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-all">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </button>
+                <div class="text-center flex-1 px-3">
+                    <h1 class="font-bold text-sm truncate" id="memberChurchName">Igreja Digital</h1>
+                </div>
+                <div class="w-8"></div>
+            </div>
+        </header>
+
+        <!-- Member Navigation -->
+        <nav class="bg-white shadow-lg sticky top-12 z-40 border-b border-gray-100">
+            <div class="max-w-lg mx-auto flex justify-around py-1.5">
+                <button onclick="showMemberSection('home')" class="member-nav flex flex-col items-center px-2 py-1.5 rounded-lg text-red-600 transition-all" data-section="home">
+                    <i class="fas fa-home text-base"></i>
+                    <span class="text-[9px] mt-0.5 font-medium">Início</span>
+                </button>
+                <button onclick="showMemberSection('donations')" class="member-nav flex flex-col items-center px-2 py-1.5 rounded-lg text-gray-400 transition-all" data-section="donations">
+                    <i class="fas fa-heart text-base"></i>
+                    <span class="text-[9px] mt-0.5 font-medium">Ofertar</span>
+                </button>
+                <button onclick="showMemberSection('announcements')" class="member-nav flex flex-col items-center px-2 py-1.5 rounded-lg text-gray-400 transition-all" data-section="announcements">
+                    <i class="fas fa-bullhorn text-base"></i>
+                    <span class="text-[9px] mt-0.5 font-medium">Avisos</span>
+                </button>
+                <button onclick="showMemberSection('events')" class="member-nav flex flex-col items-center px-2 py-1.5 rounded-lg text-gray-400 transition-all" data-section="events">
+                    <i class="fas fa-calendar text-base"></i>
+                    <span class="text-[9px] mt-0.5 font-medium">Eventos</span>
+                </button>
+                <button onclick="showMemberSection('media')" class="member-nav flex flex-col items-center px-2 py-1.5 rounded-lg text-gray-400 transition-all" data-section="media">
+                    <i class="fas fa-play-circle text-base"></i>
+                    <span class="text-[9px] mt-0.5 font-medium">Mídia</span>
+                </button>
+                <button onclick="showMemberSection('location')" class="member-nav flex flex-col items-center px-2 py-1.5 rounded-lg text-gray-400 transition-all" data-section="location">
+                    <i class="fas fa-map-marker-alt text-base"></i>
+                    <span class="text-[9px] mt-0.5 font-medium">Local</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Member Content -->
+        <main class="max-w-lg mx-auto p-3 pb-20">
+            <!-- Home Section -->
+            <section id="memberHomeSection" class="member-section fade-in">
+                <div class="bg-white rounded-xl p-4 card-shadow text-center mb-3">
+                    <div id="memberLogo" class="w-16 h-16 gradient-gold rounded-xl flex items-center justify-center mx-auto mb-3 overflow-hidden shadow-lg">
+                        <i class="fas fa-church text-2xl text-white" id="memberLogoIcon"></i>
+                        <img id="memberLogoImg" class="hidden w-full h-full object-cover" src="" alt="Logo">
+                    </div>
+                    <h2 class="text-base font-bold text-gray-800" id="memberChurchNameHome">Bem-vindo!</h2>
+                    <p class="text-gray-500 text-xs mt-1" id="memberChurchAddress"></p>
+                </div>
+                
+                <div class="bg-gradient-to-br from-red-700 via-red-800 to-red-900 rounded-xl p-4 text-white mb-3 shadow-lg">
+                    <div class="flex items-start gap-2">
+                        <i class="fas fa-book-open text-lg text-white/80"></i>
+                        <div>
+                            <p class="italic text-sm leading-relaxed" id="memberDailyVerse">"Porque Deus amou o mundo de tal maneira..."</p>
+                            <p class="text-right text-white/80 text-xs mt-2 font-medium" id="memberVerseRef">João 3:16</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="memberNotification" class="hidden bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-400 rounded-r-xl p-3 mb-3">
+                    <div class="flex items-start gap-2">
+                        <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-bell text-amber-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-amber-800 text-sm">Aviso Importante</p>
+                            <p class="text-amber-700 text-xs mt-0.5" id="memberNotificationText"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="memberLatestAnnouncement" class="bg-white rounded-xl p-4 card-shadow">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                        <i class="fas fa-bullhorn text-purple-500 text-sm"></i>
+                        Último Aviso
+                    </h3>
+                    <div id="latestAnnouncementContent">
+                        <p class="text-gray-500 text-sm">Carregando...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Donations Section -->
+            <section id="memberDonationsSection" class="member-section hidden fade-in">
+                <div class="bg-white rounded-2xl p-6 card-shadow mb-6">
+                    <div class="text-center mb-6">
+                        <div class="w-20 h-20 gradient-gold rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                            <i class="fas fa-hand-holding-heart text-3xl text-white"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Dízimos e Ofertas</h2>
+                        <p class="text-gray-500 text-sm mt-2">Contribua com a obra de Deus</p>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-red-50 to-amber-50 rounded-xl p-4 mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-gray-600 font-medium text-sm">Chave PIX</span>
+                            <button onclick="copyPixKey()" class="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1">
+                                <i class="fas fa-copy"></i>
+                                <span>Copiar</span>
+                            </button>
+                        </div>
+                        <p class="text-lg font-mono font-bold text-gray-800 break-all" id="memberPixKey">-</p>
+                        <p class="text-sm text-gray-500 mt-1" id="memberPixKeyType"></p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between py-3 border-b border-gray-100">
+                            <span class="text-gray-500">Banco</span>
+                            <span class="font-medium text-gray-800" id="memberBankName">-</span>
+                        </div>
+                        <div class="flex justify-between py-3 border-b border-gray-100">
+                            <span class="text-gray-500">Agência</span>
+                            <span class="font-medium text-gray-800" id="memberBankAgency">-</span>
+                        </div>
+                        <div class="flex justify-between py-3 border-b border-gray-100">
+                            <span class="text-gray-500">Conta</span>
+                            <span class="font-medium text-gray-800" id="memberBankAccount">-</span>
+                        </div>
+                        <div class="flex justify-between py-3">
+                            <span class="text-gray-500">Titular</span>
+                            <span class="font-medium text-gray-800 text-right" id="memberAccountHolder">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 card-shadow mb-6">
+                    <h3 class="font-bold text-gray-800 mb-4">Tipos de Doação</h3>
+                    <div id="memberDonationTypes" class="flex flex-wrap gap-2">
+                        <span class="text-gray-400">Carregando...</span>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                        <p class="text-blue-700 text-sm">
+                            As doações são voluntárias e realizadas diretamente na sua instituição bancária. O app não processa pagamentos.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Announcements Section -->
+            <section id="memberAnnouncementsSection" class="member-section hidden fade-in">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Avisos e Comunicados</h2>
+                <div id="memberAnnouncementsList" class="space-y-4">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-spinner spin text-3xl"></i>
+                        <p class="mt-3">Carregando avisos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Events Section -->
+            <section id="memberEventsSection" class="member-section hidden fade-in">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Agenda da Igreja</h2>
+                <div id="memberEventsList" class="space-y-4">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-spinner spin text-3xl"></i>
+                        <p class="mt-3">Carregando eventos...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Media Section -->
+            <section id="memberMediaSection" class="member-section hidden fade-in">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Cultos e Mensagens</h2>
+                <div id="memberMediaList" class="space-y-4">
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-spinner spin text-3xl"></i>
+                        <p class="mt-3">Carregando mídias...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Location Section -->
+            <section id="memberLocationSection" class="member-section hidden fade-in">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Nossa Localização</h2>
+                <div class="bg-white rounded-2xl overflow-hidden card-shadow">
+                    <div class="h-56 bg-gray-200">
+                        <iframe id="googleMapFrame" class="w-full h-full" style="border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src=""></iframe>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-gray-800 text-lg" id="memberLocationName">Igreja Digital</h3>
+                        <p class="text-gray-500 mt-2" id="memberLocationAddress">-</p>
+                        <div class="flex gap-3 mt-5">
+                            <a id="mapsLink" href="#" target="_blank" class="flex-1 btn-primary gradient-bg text-white py-3 rounded-xl text-center font-medium flex items-center justify-center gap-2">
+                                <i class="fas fa-directions"></i>
+                                <span>Como Chegar</span>
+                            </a>
+                            <a id="phoneLink" href="tel:" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl text-center font-medium hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
+                                <i class="fas fa-phone"></i>
+                                <span>Ligar</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcementModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg card-shadow-lg slide-up my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800" id="announcementModalTitle">Novo Aviso</h3>
+                <button onclick="closeAnnouncementModal()" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+                    <i class="fas fa-times text-gray-500"></i>
+                </button>
+            </div>
+            <form onsubmit="saveAnnouncement(event)" class="space-y-4">
+                <input type="hidden" id="announcementId">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Título</label>
+                    <input type="text" id="annTitle" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Título do aviso" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Descrição</label>
+                    <textarea id="annDescription" rows="3" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Descreva o aviso..." required></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Data</label>
+                        <input type="date" id="annDate" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Prioridade</label>
+                        <select id="annPriority" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white">
+                            <option value="normal">Normal</option>
+                            <option value="high">Alta</option>
+                            <option value="urgent">Urgente</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeAnnouncementModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 btn-primary gradient-bg text-white py-3 rounded-xl font-medium">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg card-shadow-lg slide-up my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800" id="eventModalTitle">Novo Evento</h3>
+                <button onclick="closeEventModal()" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+                    <i class="fas fa-times text-gray-500"></i>
+                </button>
+            </div>
+            <form onsubmit="saveEvent(event)" class="space-y-4">
+                <input type="hidden" id="eventId">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Nome do Evento</label>
+                    <input type="text" id="evtName" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Culto de Domingo" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Data</label>
+                        <input type="date" id="evtDate" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Horário</label>
+                        <input type="time" id="evtTime" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Local</label>
+                    <input type="text" id="evtLocation" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Templo Principal" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Descrição</label>
+                    <textarea id="evtDescription" rows="2" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Detalhes do evento..."></textarea>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeEventModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 btn-primary gradient-bg text-white py-3 rounded-xl font-medium">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Media Modal -->
+    <div id="mediaModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg card-shadow-lg slide-up my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800" id="mediaModalTitle">Adicionar Mídia</h3>
+                <button onclick="closeMediaModal()" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+                    <i class="fas fa-times text-gray-500"></i>
+                </button>
+            </div>
+            <form onsubmit="saveMedia(event)" class="space-y-4">
+                <input type="hidden" id="mediaId">
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Título</label>
+                    <input type="text" id="mediaTitle" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Culto Dominical - 01/01" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Tipo</label>
+                    <select id="mediaType" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white">
+                        <option value="video">Vídeo (YouTube)</option>
+                        <option value="audio">Áudio (URL)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">URL do Vídeo/Áudio</label>
+                    <input type="url" id="mediaUrl" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="https://youtube.com/watch?v=..." required>
+                    <p class="text-xs text-gray-400 mt-1">Cole o link do YouTube ou URL do áudio</p>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Data</label>
+                    <input type="date" id="mediaDate" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" required>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-medium mb-2">Descrição</label>
+                    <textarea id="mediaDescription" rows="2" class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl" placeholder="Pregador, tema..."></textarea>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeMediaModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancelar</button>
+                    <button type="submit" class="flex-1 btn-primary gradient-bg text-white py-3 rounded-xl font-medium">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-auto z-50">
+        <div class="bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 slide-up">
+            <div id="toastIconContainer" class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
+                <i id="toastIcon" class="fas fa-check"></i>
+            </div>
+            <span id="toastMessage" class="font-medium"></span>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================
+        // FIREBASE CONFIGURATION - CREDENCIAIS DO PROJETO
+        // =====================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXXGHdgYIMyVy7R-__XU2mIG2JnVnW_i8",
+            authDomain: "church-310b0.firebaseapp.com",
+            databaseURL: "https://church-310b0-default-rtdb.firebaseio.com",
+            projectId: "church-310b0",
+            storageBucket: "church-310b0.firebasestorage.app",
+            messagingSenderId: "524765852349",
+            appId: "1:524765852349:web:7c2e1c12f881a5c56dbdd4",
+            measurementId: "G-GV77FECKSX"
+        };
+
+        // Initialize Firebase
+        let auth, database;
+        let currentUser = null;
+        let currentChurchId = null;
+        let useFirebase = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            database = firebase.database();
+            useFirebase = true;
+            console.log('Firebase Realtime Database inicializado');
+        } catch (e) {
+            console.log('Firebase não disponível, usando localStorage');
+            useFirebase = false;
+        }
+
+        // =====================================================
+        // DATABASE ABSTRACTION LAYER - REALTIME DATABASE
+        // =====================================================
+        const DB = {
+            getChurchId: () => currentChurchId || localStorage.getItem('churchId') || 'default',
+            
+            setChurchId: (id) => {
+                currentChurchId = id;
+                localStorage.setItem('churchId', id);
+            },
+
+            // Obter dados
+            get: async (path) => {
+                const churchId = DB.getChurchId();
+                
+                if (useFirebase && database) {
+                    try {
+                        const snapshot = await database.ref(`churches/${churchId}/${path}`).once('value');
+                        return snapshot.val();
+                    } catch (e) {
+                        console.error('Firebase get error:', e);
+                    }
+                }
+                
+                const data = localStorage.getItem(`igreja_${churchId}_${path}`);
+                return data ? JSON.parse(data) : null;
+            },
+
+            // Salvar dados (objeto simples)
+            set: async (path, data) => {
+                const churchId = DB.getChurchId();
+                
+                if (useFirebase && database) {
+                    try {
+                        await database.ref(`churches/${churchId}/${path}`).set({
+                            ...data,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                        DB.addLog(`Configurações atualizadas: ${path}`);
+                        return;
+                    } catch (e) {
+                        console.error('Firebase set error:', e);
+                    }
+                }
+                
+                localStorage.setItem(`igreja_${churchId}_${path}`, JSON.stringify(data));
+                DB.addLog(`Configurações atualizadas: ${path}`);
+            },
+
+            // Adicionar item à lista
+            add: async (path, item) => {
+                const churchId = DB.getChurchId();
+                const id = Date.now().toString();
+                
+                if (useFirebase && database) {
+                    try {
+                        await database.ref(`churches/${churchId}/${path}/${id}`).set({
+                            ...item,
+                            id,
+                            createdAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                        DB.addLog(`Novo item em ${path}: ${item.title || item.name || 'Item'}`);
+                        return id;
+                    } catch (e) {
+                        console.error('Firebase add error:', e);
+                    }
+                }
+                
+                const items = JSON.parse(localStorage.getItem(`igreja_${churchId}_${path}`) || '{}');
+                items[id] = { ...item, id, createdAt: Date.now() };
+                localStorage.setItem(`igreja_${churchId}_${path}`, JSON.stringify(items));
+                DB.addLog(`Novo item em ${path}`);
+                return id;
+            },
+
+            // Atualizar item
+            update: async (path, id, item) => {
+                const churchId = DB.getChurchId();
+                
+                if (useFirebase && database) {
+                    try {
+                        await database.ref(`churches/${churchId}/${path}/${id}`).update({
+                            ...item,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                        DB.addLog(`Item atualizado em ${path}`);
+                        return;
+                    } catch (e) {
+                        console.error('Firebase update error:', e);
+                    }
+                }
+                
+                const items = JSON.parse(localStorage.getItem(`igreja_${churchId}_${path}`) || '{}');
+                if (items[id]) {
+                    items[id] = { ...items[id], ...item };
+                    localStorage.setItem(`igreja_${churchId}_${path}`, JSON.stringify(items));
+                }
+                DB.addLog(`Item atualizado em ${path}`);
+            },
+
+            // Deletar item
+            delete: async (path, id) => {
+                const churchId = DB.getChurchId();
+                
+                if (useFirebase && database) {
+                    try {
+                        await database.ref(`churches/${churchId}/${path}/${id}`).remove();
+                        DB.addLog(`Item removido de ${path}`);
+                        return;
+                    } catch (e) {
+                        console.error('Firebase delete error:', e);
+                    }
+                }
+                
+                const items = JSON.parse(localStorage.getItem(`igreja_${churchId}_${path}`) || '{}');
+                delete items[id];
+                localStorage.setItem(`igreja_${churchId}_${path}`, JSON.stringify(items));
+                DB.addLog(`Item removido de ${path}`);
+            },
+
+            // Converter objeto para array
+            toArray: (obj) => {
+                if (!obj) return [];
+                if (Array.isArray(obj)) return obj;
+                return Object.values(obj);
+            },
+
+            // Adicionar log
+            addLog: async (message) => {
+                const churchId = DB.getChurchId();
+                const log = { 
+                    message, 
+                    timestamp: Date.now(), 
+                    user: currentUser?.email || 'sistema' 
+                };
+                
+                if (useFirebase && database) {
+                    try {
+                        await database.ref(`churches/${churchId}/logs`).push(log);
+                        return;
+                    } catch (e) {}
+                }
+                
+                const logs = JSON.parse(localStorage.getItem(`igreja_${churchId}_logs`) || '[]');
+                logs.unshift(log);
+                localStorage.setItem(`igreja_${churchId}_logs`, JSON.stringify(logs.slice(0, 100)));
+            },
+
+            // Listener em tempo real
+            onValue: (path, callback) => {
+                const churchId = DB.getChurchId();
+                
+                if (useFirebase && database) {
+                    database.ref(`churches/${churchId}/${path}`).on('value', (snapshot) => {
+                        callback(snapshot.val());
+                    });
+                }
+            },
+
+            // Remover listener
+            offValue: (path) => {
+                const churchId = DB.getChurchId();
+                
+                if (useFirebase && database) {
+                    database.ref(`churches/${churchId}/${path}`).off();
+                }
+            }
+        };
+
+        // =====================================================
+        // INITIALIZATION
+        // =====================================================
+        function initializeApp() {
+            if (auth) {
+                auth.onAuthStateChanged(async (user) => {
+                    if (user) {
+                        currentUser = user;
+                        if (useFirebase) {
+                            try {
+                                const snapshot = await database.ref(`users/${user.uid}`).once('value');
+                                const userData = snapshot.val();
+                                if (userData && userData.churchId) {
+                                    DB.setChurchId(userData.churchId);
+                                } else {
+                                    DB.setChurchId(user.uid);
+                                }
+                            } catch (e) {
+                                DB.setChurchId(user.uid);
+                            }
+                        }
+                    }
+                    hideLoading();
+                });
+            } else {
+                hideLoading();
+            }
+            
+            // Verificar conexão
+            if (useFirebase && database) {
+                database.ref('.info/connected').on('value', (snapshot) => {
+                    const connected = snapshot.val();
+                    const statusDot = document.getElementById('statusDot');
+                    const statusText = document.getElementById('connectionStatus');
+                    
+                    if (connected) {
+                        statusDot.className = 'w-2 h-2 bg-green-400 rounded-full pulse-dot';
+                        statusText.textContent = 'Conectado ao Firebase';
+                    } else {
+                        statusDot.className = 'w-2 h-2 bg-yellow-400 rounded-full pulse-dot';
+                        statusText.textContent = 'Modo Offline';
+                    }
+                });
+            } else {
+                document.getElementById('statusDot').className = 'w-2 h-2 bg-blue-400 rounded-full pulse-dot';
+                document.getElementById('connectionStatus').textContent = 'Modo Local';
+            }
+        }
+
+        function hideLoading() {
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('appSelector').classList.remove('hidden');
+            }, 1500);
+        }
+
+        // =====================================================
+        // AUTHENTICATION
+        // =====================================================
+        function showAuthTab(tab) {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('forgotPasswordForm').classList.add('hidden');
+            
+            document.getElementById('tabLogin').className = 'flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all text-gray-500 hover:text-gray-700';
+            document.getElementById('tabRegister').className = 'flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all text-gray-500 hover:text-gray-700';
+
+            if (tab === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('tabLogin').className = 'flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all bg-white shadow-sm text-gray-800';
+            } else if (tab === 'register') {
+                document.getElementById('registerForm').classList.remove('hidden');
+                document.getElementById('tabRegister').className = 'flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all bg-white shadow-sm text-gray-800';
+            } else if (tab === 'forgot') {
+                document.getElementById('forgotPasswordForm').classList.remove('hidden');
+            }
+        }
+
+        function showForgotPassword() {
+            showAuthTab('forgot');
+        }
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.parentElement.querySelector('button i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+            
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<i class="fas fa-spinner spin"></i> <span>Entrando...</span>';
+
+            try {
+                if (auth && useFirebase) {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    currentUser = userCredential.user;
+                    
+                    const snapshot = await database.ref(`users/${currentUser.uid}`).once('value');
+                    const userData = snapshot.val();
+                    if (userData && userData.churchId) {
+                        DB.setChurchId(userData.churchId);
+                    } else {
+                        DB.setChurchId(currentUser.uid);
+                    }
+                } else {
+                    const storedAdmin = localStorage.getItem('igreja_admin_' + email);
+                    if (storedAdmin) {
+                        const admin = JSON.parse(storedAdmin);
+                        if (admin.password === password) {
+                            currentUser = { email, uid: admin.churchId, displayName: admin.name };
+                            DB.setChurchId(admin.churchId);
+                        } else {
+                            throw new Error('Senha incorreta');
+                        }
+                    } else {
+                        throw new Error('Usuário não encontrado. Crie uma conta primeiro.');
+                    }
+                }
+
+                showToast('Login realizado com sucesso!', 'success');
+                document.getElementById('appSelector').classList.add('hidden');
+                document.getElementById('adminLogin').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                loadAdminData();
+                
+            } catch (error) {
+                let message = 'Erro ao fazer login';
+                if (error.code === 'auth/user-not-found') message = 'Usuário não encontrado';
+                else if (error.code === 'auth/wrong-password') message = 'Senha incorreta';
+                else if (error.code === 'auth/invalid-email') message = 'E-mail inválido';
+                else if (error.code === 'auth/invalid-credential') message = 'E-mail ou senha incorretos';
+                else if (error.message) message = error.message;
+                showToast(message, 'error');
+            }
+
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = '<span>Entrar</span><i class="fas fa-arrow-right"></i>';
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value;
+            const churchName = document.getElementById('regChurchName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+            const btn = document.getElementById('registerBtn');
+
+            if (password !== passwordConfirm) {
+                showToast('As senhas não coincidem', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showToast('A senha deve ter no mínimo 6 caracteres', 'error');
+                return;
+            }
+
+            btn.classList.add('btn-loading');
+            btn.innerHTML = '<i class="fas fa-spinner spin"></i> <span>Criando conta...</span>';
+
+            try {
+                let churchId;
+                
+                if (auth && useFirebase) {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    currentUser = userCredential.user;
+                    churchId = currentUser.uid;
+                    
+                    await currentUser.updateProfile({ displayName: name });
+                    
+                    // Salvar dados do usuário
+                    await database.ref(`users/${currentUser.uid}`).set({
+                        name,
+                        email,
+                        churchId,
+                        role: 'admin',
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+
+                    // Criar dados iniciais da igreja
+                    await database.ref(`churches/${churchId}`).set({
+                        settings: {
+                            name: churchName,
+                            address: '',
+                            phone: '',
+                            email: email,
+                            logo: '',
+                            dailyVerse: '"Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna." - João 3:16'
+                        },
+                        donations: {
+                            pixKey: '',
+                            pixKeyType: 'E-mail',
+                            bankName: '',
+                            bankAgency: '',
+                            bankAccount: '',
+                            accountHolder: churchName,
+                            types: ['Dízimo', 'Oferta', 'Missões']
+                        },
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                } else {
+                    churchId = 'church_' + Date.now();
+                    currentUser = { email, uid: churchId, displayName: name };
+                    
+                    localStorage.setItem('igreja_admin_' + email, JSON.stringify({
+                        name,
+                        email,
+                        password,
+                        churchId,
+                        churchName
+                    }));
+
+                    DB.setChurchId(churchId);
+                    localStorage.setItem(`igreja_${churchId}_settings`, JSON.stringify({
+                        name: churchName,
+                        address: '',
+                        phone: '',
+                        email: email,
+                        logo: '',
+                        dailyVerse: '"Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito..." - João 3:16'
+                    }));
+                    localStorage.setItem(`igreja_${churchId}_donations`, JSON.stringify({
+                        pixKey: '',
+                        pixKeyType: 'E-mail',
+                        bankName: '',
+                        bankAgency: '',
+                        bankAccount: '',
+                        accountHolder: churchName,
+                        types: ['Dízimo', 'Oferta', 'Missões']
+                    }));
+                }
+
+                DB.setChurchId(churchId);
+                showToast('Conta criada com sucesso! Bem-vindo!', 'success');
+                document.getElementById('appSelector').classList.add('hidden');
+                document.getElementById('adminLogin').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                loadAdminData();
+
+            } catch (error) {
+                let message = 'Erro ao criar conta';
+                if (error.code === 'auth/email-already-in-use') message = 'Este e-mail já está cadastrado';
+                else if (error.code === 'auth/weak-password') message = 'Senha muito fraca';
+                else if (error.code === 'auth/invalid-email') message = 'E-mail inválido';
+                showToast(message, 'error');
+            }
+
+            btn.classList.remove('btn-loading');
+            btn.innerHTML = '<span>Criar Conta</span><i class="fas fa-check"></i>';
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmail').value;
+            const btn = document.getElementById('forgotBtn');
+
+            btn.classList.add('btn-loading');
+            btn.textContent = 'Enviando...';
+
+            try {
+                if (auth && useFirebase) {
+                    await auth.sendPasswordResetEmail(email);
+                    showToast('Link de recuperação enviado para seu e-mail!', 'success');
+                } else {
+                    showToast('Recuperação disponível apenas com Firebase ativo', 'info');
+                }
+                showAuthTab('login');
+            } catch (error) {
+                showToast('Erro ao enviar e-mail de recuperação', 'error');
+            }
+
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Enviar Link de Recuperação';
+        }
+
+        function adminLogout() {
+            if (auth && useFirebase) {
+                auth.signOut();
+            }
+            currentUser = null;
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('appSelector').classList.remove('hidden');
+            showToast('Logout realizado com sucesso', 'success');
+        }
+
+        // =====================================================
+        // APP NAVIGATION
+        // =====================================================
+        function openApp(type) {
+            document.getElementById('appSelector').classList.add('hidden');
+            if (type === 'admin') {
+                document.getElementById('adminLogin').classList.remove('hidden');
+                showAuthTab('login');
+            } else {
+                document.getElementById('memberApp').classList.remove('hidden');
+                loadMemberData();
+            }
+        }
+
+        function backToSelector() {
+            document.querySelectorAll('#adminLogin, #adminDashboard, #memberApp').forEach(el => el.classList.add('hidden'));
+            document.getElementById('appSelector').classList.remove('hidden');
+        }
+
+        // =====================================================
+        // ADMIN SECTIONS
+        // =====================================================
+        function showAdminSection(section) {
+            document.querySelectorAll('.admin-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`admin${section.charAt(0).toUpperCase() + section.slice(1)}Section`).classList.remove('hidden');
+            
+            document.querySelectorAll('.admin-nav').forEach(btn => {
+                btn.classList.remove('nav-active');
+                if (btn.dataset.section === section) {
+                    btn.classList.add('nav-active');
+                }
+            });
+
+            if (section === 'finances') {
+                setTimeout(renderFinanceChart, 100);
+            }
+        }
+
+        async function loadAdminData() {
+            const settings = await DB.get('settings') || {};
+            document.getElementById('adminChurchName').textContent = settings.name || 'Igreja Digital';
+            document.getElementById('adminUserName').textContent = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Administrador';
+            
+            const donations = await DB.get('donations') || {};
+            document.getElementById('pixKey').value = donations.pixKey || '';
+            document.getElementById('pixKeyType').value = donations.pixKeyType || 'E-mail';
+            document.getElementById('bankName').value = donations.bankName || '';
+            document.getElementById('bankAgency').value = donations.bankAgency || '';
+            document.getElementById('bankAccount').value = donations.bankAccount || '';
+            document.getElementById('accountHolder').value = donations.accountHolder || '';
+            
+            const types = donations.types || [];
+            document.getElementById('typeTithe').checked = types.includes('Dízimo');
+            document.getElementById('typeOffering').checked = types.includes('Oferta');
+            document.getElementById('typeMissions').checked = types.includes('Missões');
+            document.getElementById('typeConstruction').checked = types.includes('Construção');
+
+            document.getElementById('churchName').value = settings.name || '';
+            document.getElementById('churchPhone').value = settings.phone || '';
+            document.getElementById('churchAddress').value = settings.address || '';
+            document.getElementById('churchEmail').value = settings.email || '';
+            document.getElementById('churchLogo').value = settings.logo || '';
+            document.getElementById('dailyVerse').value = settings.dailyVerse || '';
+
+            await loadAnnouncements();
+            await loadEvents();
+            await loadFinances();
+            await loadMedia();
+            await loadActivityLog();
+            updateStats();
+            showAdminSection('dashboard');
+        }
+
+        async function updateStats() {
+            const announcements = DB.toArray(await DB.get('announcements'));
+            const events = DB.toArray(await DB.get('events'));
+            const finances = DB.toArray(await DB.get('finances'));
+            const media = DB.toArray(await DB.get('media'));
+            
+            const currentMonth = new Date().getMonth();
+            const monthlyIncome = finances
+                .filter(f => new Date(f.date).getMonth() === currentMonth)
+                .reduce((sum, f) => sum + parseFloat(f.value || 0), 0);
+
+            document.getElementById('statsAnnouncements').textContent = announcements.length;
+            document.getElementById('statsEvents').textContent = events.length;
+            document.getElementById('statsIncome').textContent = `R$ ${monthlyIncome.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            document.getElementById('statsMedia').textContent = media.length;
+        }
+
+        // =====================================================
+        // DONATIONS MANAGEMENT
+        // =====================================================
+        async function saveDonationSettings(e) {
+            e.preventDefault();
+            const types = [];
+            if (document.getElementById('typeTithe').checked) types.push('Dízimo');
+            if (document.getElementById('typeOffering').checked) types.push('Oferta');
+            if (document.getElementById('typeMissions').checked) types.push('Missões');
+            if (document.getElementById('typeConstruction').checked) types.push('Construção');
+
+            await DB.set('donations', {
+                pixKey: document.getElementById('pixKey').value,
+                pixKeyType: document.getElementById('pixKeyType').value,
+                bankName: document.getElementById('bankName').value,
+                bankAgency: document.getElementById('bankAgency').value,
+                bankAccount: document.getElementById('bankAccount').value,
+                accountHolder: document.getElementById('accountHolder').value,
+                types
+            });
+            showToast('Configurações de doação salvas!', 'success');
+        }
+
+        // =====================================================
+        // ANNOUNCEMENTS MANAGEMENT
+        // =====================================================
+        async function loadAnnouncements() {
+            const announcements = DB.toArray(await DB.get('announcements'));
+            renderAnnouncementsAdmin(announcements);
+        }
+
+        function renderAnnouncementsAdmin(announcements) {
+            const container = document.getElementById('announcementsList');
+            
+            if (!announcements || announcements.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-bullhorn text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">Nenhum aviso cadastrado</p>
+                        <p class="text-gray-400 text-sm mt-1">Clique em "Novo Aviso" para criar o primeiro</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const priorityColors = { 
+                normal: 'bg-green-100 text-green-700', 
+                high: 'bg-amber-100 text-amber-700', 
+                urgent: 'bg-red-100 text-red-700' 
+            };
+            const priorityLabels = { normal: 'Normal', high: 'Alta', urgent: 'Urgente' };
+
+            container.innerHTML = announcements.sort((a, b) => {
+                const order = { urgent: 0, high: 1, normal: 2 };
+                return order[a.priority] - order[b.priority];
+            }).map(ann => `
+                <div class="bg-white rounded-2xl p-5 card-shadow priority-${ann.priority} card-hover">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex flex-wrap items-center gap-2 mb-3">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold ${priorityColors[ann.priority]}">${priorityLabels[ann.priority]}</span>
+                                <span class="text-gray-400 text-sm">${formatDate(ann.date)}</span>
+                            </div>
+                            <h3 class="font-bold text-gray-800 text-lg">${ann.title}</h3>
+                            <p class="text-gray-500 mt-2">${ann.description}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editAnnouncement('${ann.id}')" class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-100 transition-all">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteAnnouncement('${ann.id}')" class="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center hover:bg-red-100 transition-all">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAnnouncementModal(announcement = null) {
+            document.getElementById('announcementModal').classList.remove('hidden');
+            document.getElementById('announcementModalTitle').textContent = announcement ? 'Editar Aviso' : 'Novo Aviso';
+            
+            if (announcement) {
+                document.getElementById('announcementId').value = announcement.id;
+                document.getElementById('annTitle').value = announcement.title;
+                document.getElementById('annDescription').value = announcement.description;
+                document.getElementById('annDate').value = announcement.date;
+                document.getElementById('annPriority').value = announcement.priority;
+            } else {
+                document.getElementById('announcementId').value = '';
+                document.getElementById('annTitle').value = '';
+                document.getElementById('annDescription').value = '';
+                document.getElementById('annDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('annPriority').value = 'normal';
+            }
+        }
+
+        function closeAnnouncementModal() {
+            document.getElementById('announcementModal').classList.add('hidden');
+        }
+
+        async function editAnnouncement(id) {
+            const announcements = DB.toArray(await DB.get('announcements'));
+            const ann = announcements.find(a => a.id === id);
+            if (ann) showAnnouncementModal(ann);
+        }
+
+        async function saveAnnouncement(e) {
+            e.preventDefault();
+            const id = document.getElementById('announcementId').value;
+            const announcement = {
+                title: document.getElementById('annTitle').value,
+                description: document.getElementById('annDescription').value,
+                date: document.getElementById('annDate').value,
+                priority: document.getElementById('annPriority').value
+            };
+
+            if (id) {
+                await DB.update('announcements', id, announcement);
+            } else {
+                await DB.add('announcements', announcement);
+            }
+
+            closeAnnouncementModal();
+            await loadAnnouncements();
+            updateStats();
+            showToast('Aviso salvo com sucesso!', 'success');
+        }
+
+        async function deleteAnnouncement(id) {
+            if (confirm('Deseja realmente excluir este aviso?')) {
+                await DB.delete('announcements', id);
+                await loadAnnouncements();
+                updateStats();
+                showToast('Aviso excluído!', 'success');
+            }
+        }
+
+        // =====================================================
+        // EVENTS MANAGEMENT
+        // =====================================================
+        async function loadEvents() {
+            const events = DB.toArray(await DB.get('events'));
+            renderEventsAdmin(events);
+        }
+
+        function renderEventsAdmin(events) {
+            const container = document.getElementById('eventsList');
+            
+            if (!events || events.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-calendar text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">Nenhum evento cadastrado</p>
+                        <p class="text-gray-400 text-sm mt-1">Clique em "Novo Evento" para criar o primeiro</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = events.sort((a, b) => new Date(a.date) - new Date(b.date)).map(evt => `
+                <div class="bg-white rounded-2xl p-5 card-shadow card-hover">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-14 h-14 gradient-bg rounded-xl flex flex-col items-center justify-center text-white shadow-lg">
+                            <span class="text-xs font-medium">${getMonthShort(evt.date)}</span>
+                            <span class="text-xl font-bold">${new Date(evt.date + 'T00:00:00').getDate()}</span>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editEvent('${evt.id}')" class="w-9 h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-all">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <button onclick="deleteEvent('${evt.id}')" class="w-9 h-9 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-all">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <h3 class="font-bold text-gray-800">${evt.name}</h3>
+                    <div class="mt-3 space-y-1 text-sm text-gray-500">
+                        <p><i class="fas fa-clock w-5 text-center text-purple-500"></i> ${evt.time}</p>
+                        <p><i class="fas fa-map-marker-alt w-5 text-center text-purple-500"></i> ${evt.location}</p>
+                    </div>
+                    ${evt.description ? `<p class="text-gray-400 text-sm mt-3 line-clamp-2">${evt.description}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function showEventModal(event = null) {
+            document.getElementById('eventModal').classList.remove('hidden');
+            document.getElementById('eventModalTitle').textContent = event ? 'Editar Evento' : 'Novo Evento';
+            
+            if (event) {
+                document.getElementById('eventId').value = event.id;
+                document.getElementById('evtName').value = event.name;
+                document.getElementById('evtDate').value = event.date;
+                document.getElementById('evtTime').value = event.time;
+                document.getElementById('evtLocation').value = event.location;
+                document.getElementById('evtDescription').value = event.description || '';
+            } else {
+                document.getElementById('eventId').value = '';
+                document.getElementById('evtName').value = '';
+                document.getElementById('evtDate').value = '';
+                document.getElementById('evtTime').value = '';
+                document.getElementById('evtLocation').value = '';
+                document.getElementById('evtDescription').value = '';
+            }
+        }
+
+        function closeEventModal() {
+            document.getElementById('eventModal').classList.add('hidden');
+        }
+
+        async function editEvent(id) {
+            const events = DB.toArray(await DB.get('events'));
+            const evt = events.find(e => e.id === id);
+            if (evt) showEventModal(evt);
+        }
+
+        async function saveEvent(e) {
+            e.preventDefault();
+            const id = document.getElementById('eventId').value;
+            const event = {
+                name: document.getElementById('evtName').value,
+                date: document.getElementById('evtDate').value,
+                time: document.getElementById('evtTime').value,
+                location: document.getElementById('evtLocation').value,
+                description: document.getElementById('evtDescription').value
+            };
+
+            if (id) {
+                await DB.update('events', id, event);
+            } else {
+                await DB.add('events', event);
+            }
+
+            closeEventModal();
+            await loadEvents();
+            updateStats();
+            showToast('Evento salvo com sucesso!', 'success');
+        }
+
+        async function deleteEvent(id) {
+            if (confirm('Deseja realmente excluir este evento?')) {
+                await DB.delete('events', id);
+                await loadEvents();
+                updateStats();
+                showToast('Evento excluído!', 'success');
+            }
+        }
+
+        // =====================================================
+        // FINANCES MANAGEMENT
+        // =====================================================
+        async function loadFinances() {
+            const finances = DB.toArray(await DB.get('finances'));
+            renderFinanceEntries(finances);
+            renderFinanceTotals(finances);
+        }
+
+        async function addFinanceEntry(e) {
+            e.preventDefault();
+            await DB.add('finances', {
+                date: document.getElementById('financeDate').value,
+                value: document.getElementById('financeValue').value,
+                category: document.getElementById('financeCategory').value
+            });
+
+            document.getElementById('financeDate').value = '';
+            document.getElementById('financeValue').value = '';
+            document.getElementById('financeCategory').value = '';
+            
+            await loadFinances();
+            renderFinanceChart();
+            updateStats();
+            showToast('Entrada registrada com sucesso!', 'success');
+        }
+
+        function renderFinanceEntries(finances) {
+            const container = document.getElementById('financeEntries');
+            const categoryLabels = { dizimo: 'Dízimo', oferta: 'Oferta', missoes: 'Missões', construcao: 'Construção', outros: 'Outros' };
+            const categoryColors = { dizimo: 'text-red-600 bg-red-50', oferta: 'text-yellow-600 bg-yellow-50', missoes: 'text-blue-600 bg-blue-50', construcao: 'text-purple-600 bg-purple-50', outros: 'text-gray-600 bg-gray-50' };
+
+            if (!finances || finances.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">Nenhum registro financeiro</p>';
+                return;
+            }
+
+            container.innerHTML = finances.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15).map(f => `
+                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 rounded-lg text-xs font-semibold ${categoryColors[f.category]}">${categoryLabels[f.category] || f.category}</span>
+                        <span class="text-gray-400 text-sm">${formatDate(f.date)}</span>
+                    </div>
+                    <span class="font-bold text-gray-800">R$ ${parseFloat(f.value).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderFinanceTotals(finances) {
+            const container = document.getElementById('financeTotals');
+            const categoryLabels = { dizimo: 'Dízimo', oferta: 'Oferta', missoes: 'Missões', construcao: 'Construção', outros: 'Outros' };
+            const categoryColors = { dizimo: 'text-purple-600', oferta: 'text-blue-600', missoes: 'text-green-600', construcao: 'text-orange-600', outros: 'text-gray-600' };
+
+            const totals = {};
+            const currentMonth = new Date().getMonth();
+            (finances || []).filter(f => new Date(f.date).getMonth() === currentMonth).forEach(f => {
+                totals[f.category] = (totals[f.category] || 0) + parseFloat(f.value || 0);
+            });
+
+            const total = Object.values(totals).reduce((sum, val) => sum + val, 0);
+
+            if (Object.keys(totals).length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-4">Sem registros este mês</p>';
+                return;
+            }
+
+            container.innerHTML = Object.entries(totals).map(([cat, val]) => `
+                <div class="flex justify-between items-center">
+                    <span class="${categoryColors[cat]} font-medium">${categoryLabels[cat] || cat}</span>
+                    <span class="font-semibold">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </div>
+            `).join('') + `
+                <div class="flex justify-between items-center pt-3 border-t-2 border-gray-200 mt-3">
+                    <span class="font-bold text-gray-800">Total</span>
+                    <span class="font-bold text-green-600 text-lg">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                </div>
+            `;
+        }
+
+        let financeChart = null;
+        async function renderFinanceChart() {
+            const finances = DB.toArray(await DB.get('finances'));
+            const currentMonth = new Date().getMonth();
+            
+            const totals = {};
+            finances.filter(f => new Date(f.date).getMonth() === currentMonth).forEach(f => {
+                totals[f.category] = (totals[f.category] || 0) + parseFloat(f.value || 0);
+            });
+
+            const categoryLabels = { dizimo: 'Dízimo', oferta: 'Oferta', missoes: 'Missões', construcao: 'Construção', outros: 'Outros' };
+            const ctx = document.getElementById('financeChart');
+            if (!ctx) return;
+
+            if (financeChart) financeChart.destroy();
+
+            if (Object.keys(totals).length === 0) {
+                ctx.parentElement.innerHTML = '<div class="h-64 flex items-center justify-center"><p class="text-gray-400 text-center">Sem dados para exibir</p></div>';
+                return;
+            }
+
+            financeChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(totals).map(k => categoryLabels[k] || k),
+                    datasets: [{ 
+                        data: Object.values(totals), 
+                        backgroundColor: ['#8b5cf6', '#3b82f6', '#22c55e', '#f97316', '#6b7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                boxWidth: 12, 
+                                padding: 15,
+                                font: { size: 12 } 
+                            } 
+                        } 
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        // =====================================================
+        // MEDIA MANAGEMENT
+        // =====================================================
+        async function loadMedia() {
+            const media = DB.toArray(await DB.get('media'));
+            renderMediaAdmin(media);
+        }
+
+        function renderMediaAdmin(media) {
+            const container = document.getElementById('mediaList');
+            
+            if (!media || media.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 col-span-full">
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-video text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">Nenhuma mídia cadastrada</p>
+                        <p class="text-gray-400 text-sm mt-1">Clique em "Adicionar Mídia" para adicionar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = media.sort((a, b) => new Date(b.date) - new Date(a.date)).map(m => {
+                const youtubeId = getYouTubeId(m.url);
+                return `
+                    <div class="bg-white rounded-2xl overflow-hidden card-shadow card-hover">
+                        ${m.type === 'video' && youtubeId ? `
+                            <div class="aspect-video bg-gray-100">
+                                <img src="https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg" class="w-full h-full object-cover">
+                            </div>
+                        ` : `
+                            <div class="h-32 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                                <i class="fas fa-music text-4xl text-white/80"></i>
+                            </div>
+                        `}
+                        <div class="p-4">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="font-bold text-gray-800 line-clamp-1">${m.title}</h3>
+                                <div class="flex gap-1">
+                                    <button onclick="editMedia('${m.id}')" class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center hover:bg-blue-100 transition-all">
+                                        <i class="fas fa-edit text-xs"></i>
+                                    </button>
+                                    <button onclick="deleteMedia('${m.id}')" class="w-8 h-8 bg-red-50 text-red-600 rounded-lg flex items-center justify-center hover:bg-red-100 transition-all">
+                                        <i class="fas fa-trash text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-gray-400 text-sm">${formatDate(m.date)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showMediaModal(media = null) {
+            document.getElementById('mediaModal').classList.remove('hidden');
+            document.getElementById('mediaModalTitle').textContent = media ? 'Editar Mídia' : 'Adicionar Mídia';
+            
+            if (media) {
+                document.getElementById('mediaId').value = media.id;
+                document.getElementById('mediaTitle').value = media.title;
+                document.getElementById('mediaType').value = media.type;
+                document.getElementById('mediaUrl').value = media.url;
+                document.getElementById('mediaDate').value = media.date;
+                document.getElementById('mediaDescription').value = media.description || '';
+            } else {
+                document.getElementById('mediaId').value = '';
+                document.getElementById('mediaTitle').value = '';
+                document.getElementById('mediaType').value = 'video';
+                document.getElementById('mediaUrl').value = '';
+                document.getElementById('mediaDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('mediaDescription').value = '';
+            }
+        }
+
+        function closeMediaModal() {
+            document.getElementById('mediaModal').classList.add('hidden');
+        }
+
+        async function editMedia(id) {
+            const media = DB.toArray(await DB.get('media'));
+            const m = media.find(item => item.id === id);
+            if (m) showMediaModal(m);
+        }
+
+        async function saveMedia(e) {
+            e.preventDefault();
+            const id = document.getElementById('mediaId').value;
+            const media = {
+                title: document.getElementById('mediaTitle').value,
+                type: document.getElementById('mediaType').value,
+                url: document.getElementById('mediaUrl').value,
+                date: document.getElementById('mediaDate').value,
+                description: document.getElementById('mediaDescription').value
+            };
+
+            if (id) {
+                await DB.update('media', id, media);
+            } else {
+                await DB.add('media', media);
+            }
+
+            closeMediaModal();
+            await loadMedia();
+            updateStats();
+            showToast('Mídia salva com sucesso!', 'success');
+        }
+
+        async function deleteMedia(id) {
+            if (confirm('Deseja realmente excluir esta mídia?')) {
+                await DB.delete('media', id);
+                await loadMedia();
+                updateStats();
+                showToast('Mídia excluída!', 'success');
+            }
+        }
+
+        // =====================================================
+        // CHURCH SETTINGS
+        // =====================================================
+        async function saveChurchSettings(e) {
+            e.preventDefault();
+            await DB.set('settings', {
+                name: document.getElementById('churchName').value,
+                phone: document.getElementById('churchPhone').value,
+                address: document.getElementById('churchAddress').value,
+                email: document.getElementById('churchEmail').value,
+                logo: document.getElementById('churchLogo').value,
+                dailyVerse: document.getElementById('dailyVerse').value
+            });
+            document.getElementById('adminChurchName').textContent = document.getElementById('churchName').value;
+            showToast('Configurações salvas com sucesso!', 'success');
+        }
+
+        async function loadActivityLog() {
+            const churchId = DB.getChurchId();
+            let logs = [];
+            
+            if (useFirebase && database) {
+                try {
+                    const snapshot = await database.ref(`churches/${churchId}/logs`).orderByChild('timestamp').limitToLast(30).once('value');
+                    const data = snapshot.val();
+                    if (data) {
+                        logs = Object.values(data).reverse();
+                    }
+                } catch (e) {}
+            }
+            
+            if (logs.length === 0) {
+                logs = JSON.parse(localStorage.getItem(`igreja_${churchId}_logs`) || '[]');
+            }
+
+            const container = document.getElementById('activityLog');
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">Nenhuma atividade registrada</p>';
+                return;
+            }
+
+            container.innerHTML = logs.slice(0, 30).map(log => `
+                <div class="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+                    <div class="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-gray-700 text-sm">${log.message}</p>
+                        <p class="text-gray-400 text-xs mt-1">${new Date(log.timestamp).toLocaleString('pt-BR')} • ${log.user}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =====================================================
+        // NOTIFICATIONS
+        // =====================================================
+        async function sendNotification() {
+            const text = document.getElementById('notificationText').value;
+            if (!text.trim()) {
+                showToast('Digite uma mensagem!', 'error');
+                return;
+            }
+            await DB.set('notification', { text, timestamp: Date.now() });
+            document.getElementById('notificationText').value = '';
+            showToast('Notificação enviada para os fiéis!', 'success');
+        }
+
+        // =====================================================
+        // MEMBER APP
+        // =====================================================
+        function showMemberSection(section) {
+            document.querySelectorAll('.member-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`member${section.charAt(0).toUpperCase() + section.slice(1)}Section`).classList.remove('hidden');
+            
+            document.querySelectorAll('.member-nav').forEach(btn => {
+                btn.classList.remove('text-purple-600', 'bg-purple-50');
+                btn.classList.add('text-gray-400');
+                if (btn.dataset.section === section) {
+                    btn.classList.remove('text-gray-400');
+                    btn.classList.add('text-purple-600', 'bg-purple-50');
+                }
+            });
+        }
+
+        async function loadMemberData() {
+            const settings = await DB.get('settings') || {};
+            const donations = await DB.get('donations') || {};
+            const announcements = DB.toArray(await DB.get('announcements'));
+            const events = DB.toArray(await DB.get('events'));
+            const media = DB.toArray(await DB.get('media'));
+            const notification = await DB.get('notification');
+
+            document.getElementById('memberChurchName').textContent = settings.name || 'Igreja Digital';
+            document.getElementById('memberChurchNameHome').textContent = settings.name || 'Bem-vindo!';
+            document.getElementById('memberChurchAddress').textContent = settings.address || '';
+            
+            if (settings.logo) {
+                document.getElementById('memberLogoIcon').classList.add('hidden');
+                document.getElementById('memberLogoImg').classList.remove('hidden');
+                document.getElementById('memberLogoImg').src = settings.logo;
+            } else {
+                document.getElementById('memberLogoIcon').classList.remove('hidden');
+                document.getElementById('memberLogoImg').classList.add('hidden');
+            }
+
+            const verseText = settings.dailyVerse || '';
+            const verseParts = verseText.split(' - ');
+            document.getElementById('memberDailyVerse').textContent = verseParts[0] || '"Carregando versículo..."';
+            document.getElementById('memberVerseRef').textContent = verseParts[1] || '';
+
+            if (notification && notification.text) {
+                document.getElementById('memberNotification').classList.remove('hidden');
+                document.getElementById('memberNotificationText').textContent = notification.text;
+            } else {
+                document.getElementById('memberNotification').classList.add('hidden');
+            }
+
+            if (announcements.length > 0) {
+                const sorted = [...announcements].sort((a, b) => {
+                    const order = { urgent: 0, high: 1, normal: 2 };
+                    return order[a.priority] - order[b.priority];
+                });
+                const latest = sorted[0];
+                document.getElementById('latestAnnouncementContent').innerHTML = `
+                    <h4 class="font-semibold text-gray-800">${latest.title}</h4>
+                    <p class="text-gray-500 text-sm mt-2">${latest.description}</p>
+                    <p class="text-gray-400 text-xs mt-3"><i class="fas fa-calendar mr-1"></i>${formatDate(latest.date)}</p>
+                `;
+            } else {
+                document.getElementById('latestAnnouncementContent').innerHTML = '<p class="text-gray-400">Nenhum aviso no momento.</p>';
+            }
+
+            document.getElementById('memberPixKey').textContent = donations.pixKey || 'Não configurado';
+            document.getElementById('memberPixKeyType').textContent = donations.pixKeyType ? `Tipo: ${donations.pixKeyType}` : '';
+            document.getElementById('memberBankName').textContent = donations.bankName || '-';
+            document.getElementById('memberBankAgency').textContent = donations.bankAgency || '-';
+            document.getElementById('memberBankAccount').textContent = donations.bankAccount || '-';
+            document.getElementById('memberAccountHolder').textContent = donations.accountHolder || '-';
+            
+            const typesContainer = document.getElementById('memberDonationTypes');
+            const typeColors = { 'Dízimo': 'bg-purple-100 text-purple-700', 'Oferta': 'bg-blue-100 text-blue-700', 'Missões': 'bg-green-100 text-green-700', 'Construção': 'bg-orange-100 text-orange-700' };
+            typesContainer.innerHTML = (donations.types || []).map(type => `
+                <span class="px-4 py-2 ${typeColors[type] || 'bg-gray-100 text-gray-700'} rounded-full text-sm font-medium">${type}</span>
+            `).join('') || '<span class="text-gray-400">Nenhum tipo configurado</span>';
+
+            renderMemberAnnouncements(announcements);
+            renderMemberEvents(events);
+            renderMemberMedia(media);
+
+            document.getElementById('memberLocationName').textContent = settings.name || 'Igreja Digital';
+            document.getElementById('memberLocationAddress').textContent = settings.address || 'Endereço não configurado';
+            
+            if (settings.address) {
+                const encodedAddress = encodeURIComponent(settings.address);
+                document.getElementById('googleMapFrame').src = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                document.getElementById('mapsLink').href = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            }
+            document.getElementById('phoneLink').href = `tel:${settings.phone || ''}`;
+
+            showMemberSection('home');
+        }
+
+        function renderMemberAnnouncements(announcements) {
+            const container = document.getElementById('memberAnnouncementsList');
+            
+            if (!announcements || announcements.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-bullhorn text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">Nenhum aviso no momento</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = [...announcements].sort((a, b) => {
+                const order = { urgent: 0, high: 1, normal: 2 };
+                return order[a.priority] - order[b.priority];
+            }).map(ann => `
+                <div class="bg-white rounded-2xl p-5 card-shadow priority-${ann.priority}">
+                    <h3 class="font-bold text-gray-800">${ann.title}</h3>
+                    <p class="text-gray-500 mt-2 text-sm">${ann.description}</p>
+                    <p class="text-gray-400 text-xs mt-3">
+                        <i class="fas fa-calendar mr-1"></i>${formatDate(ann.date)}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        function renderMemberEvents(events) {
+            const container = document.getElementById('memberEventsList');
+            
+            if (!events || events.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-calendar text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">Nenhum evento agendado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = [...events].sort((a, b) => new Date(a.date) - new Date(b.date)).map(evt => `
+                <div class="bg-white rounded-2xl p-5 card-shadow">
+                    <div class="flex items-start gap-4">
+                        <div class="w-16 h-16 gradient-gold rounded-xl flex flex-col items-center justify-center text-white flex-shrink-0 shadow-lg">
+                            <span class="text-xs font-medium">${getMonthShort(evt.date)}</span>
+                            <span class="text-2xl font-bold">${new Date(evt.date + 'T00:00:00').getDate()}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-gray-800">${evt.name}</h3>
+                            <div class="mt-2 space-y-1 text-sm text-gray-500">
+                                <p><i class="fas fa-clock w-5 text-center text-orange-500"></i> ${evt.time}</p>
+                                <p class="truncate"><i class="fas fa-map-marker-alt w-5 text-center text-orange-500"></i> ${evt.location}</p>
+                            </div>
+                            ${evt.description ? `<p class="text-gray-400 text-sm mt-2 line-clamp-2">${evt.description}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMemberMedia(media) {
+            const container = document.getElementById('memberMediaList');
+            
+            if (!media || media.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-play-circle text-2xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-500">Nenhuma mídia disponível</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = [...media].sort((a, b) => new Date(b.date) - new Date(a.date)).map(m => {
+                const youtubeId = getYouTubeId(m.url);
+                return `
+                    <div class="bg-white rounded-2xl overflow-hidden card-shadow">
+                        ${m.type === 'video' && youtubeId ? `
+                            <div class="aspect-video bg-gray-100">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/${youtubeId}" frameborder="0" allowfullscreen></iframe>
+                            </div>
+                        ` : `
+                            <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+                                <audio controls class="w-full">
+                                    <source src="${m.url}" type="audio/mpeg">
+                                    Seu navegador não suporta áudio.
+                                </audio>
+                            </div>
+                        `}
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-800">${m.title}</h3>
+                            <p class="text-gray-400 text-sm mt-1">${formatDate(m.date)}</p>
+                            ${m.description ? `<p class="text-gray-500 text-sm mt-2">${m.description}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getYouTubeId(url) {
+            if (!url) return null;
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function copyPixKey() {
+            const pixKey = document.getElementById('memberPixKey').textContent;
+            if (pixKey && pixKey !== 'Não configurado' && pixKey !== '-') {
+                navigator.clipboard.writeText(pixKey).then(() => {
+                    showToast('Chave PIX copiada!', 'success');
+                });
+            } else {
+                showToast('Chave PIX não disponível', 'error');
+            }
+        }
+
+        // =====================================================
+        // UTILITIES
+        // =====================================================
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
+        function getMonthShort(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr + 'T00:00:00');
+            return date.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const iconContainer = document.getElementById('toastIconContainer');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastMessage').textContent = message;
+            
+            iconContainer.className = 'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0';
+            icon.className = 'fas';
+            
+            if (type === 'success') {
+                iconContainer.classList.add('bg-green-500');
+                icon.classList.add('fa-check', 'text-white');
+            } else if (type === 'error') {
+                iconContainer.classList.add('bg-red-500');
+                icon.classList.add('fa-times', 'text-white');
+            } else {
+                iconContainer.classList.add('bg-blue-500');
+                icon.classList.add('fa-info', 'text-white');
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        // Initialize app
+        initializeApp();
+    </script>
+</body>
+</html>
